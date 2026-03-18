@@ -3,18 +3,9 @@ FROM php:8.3-apache
 RUN apt-get update && apt-get install -y \
     unzip \
     libzip-dev \
-    libcurl4-openssl-dev \
     libonig-dev \
     libxml2-dev \
-    && docker-php-ext-install \
-        zip \
-        curl \
-        mbstring \
-        xml \
-        ctype \
-        tokenizer \
-        fileinfo \
-        pcntl \
+    && docker-php-ext-install zip mbstring xml pcntl \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 
