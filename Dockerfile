@@ -1,32 +1,25 @@
-FROM php:8.3-apache
+FROM php:8.3-cli
+
+WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
+    git \
     unzip \
     libzip-dev \
-    libonig-dev \
-    libxml2-dev \
-    && docker-php-ext-install zip mbstring xml pcntl \
-    && a2enmod rewrite \
+    && docker-php-ext-install zip \
     && rm -rf /var/lib/apt/lists/*
-
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www/html
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-scripts
 
 COPY . .
+RUN php artisan package:discover --ansi || true
 
-RUN composer install --no-dev --optimize-autoloader
-
-RUN chown -R www-data:www-data storage bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache
+RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+    && chmod -R 777 storage bootstrap/cache
 
 EXPOSE 10000
 
-RUN sed -i 's/Listen 80/Listen 10000/' /etc/apache2/ports.conf \
-    && sed -i 's/:80/:10000/' /etc/apache2/sites-available/*.conf
-
-CMD ["apache2-foreground"]
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=10000"]
