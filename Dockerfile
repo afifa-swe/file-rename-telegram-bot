@@ -3,7 +3,18 @@ FROM php:8.3-apache
 RUN apt-get update && apt-get install -y \
     unzip \
     libzip-dev \
-    && docker-php-ext-install zip \
+    libcurl4-openssl-dev \
+    libonig-dev \
+    libxml2-dev \
+    && docker-php-ext-install \
+        zip \
+        curl \
+        mbstring \
+        xml \
+        ctype \
+        tokenizer \
+        fileinfo \
+        pcntl \
     && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 
@@ -15,13 +26,9 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
 
-COPY composer.json composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-scripts
-
 COPY . .
 
-RUN composer dump-autoload --optimize \
-    && php artisan package:discover --ansi
+RUN composer install --no-dev --optimize-autoloader
 
 RUN chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
